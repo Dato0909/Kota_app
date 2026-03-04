@@ -14,9 +14,9 @@ import TopicCard from '../components/TopicCard';
 import { loadPosts, isToday } from '../utils/storage';
 import { getTodaysTopic } from '../data/topics';
 import type { Post } from '../types';
-import type { RootStackParamList } from '../../App';
+import type { HomeStackParamList } from '../../App';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+type Nav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<Nav>();
