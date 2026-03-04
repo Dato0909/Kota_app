@@ -12,7 +12,7 @@ struct PostView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     TopicCardView(topic: viewModel.todaysTopic)
                     TemplatePickerSection(
                         templates: viewModel.todaysTopic.templates,
@@ -33,6 +33,7 @@ struct PostView: View {
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("今日の1文")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -129,8 +130,8 @@ private struct TextInputSection: View {
             ZStack(alignment: .topLeading) {
                 TextEditor(text: $text)
                     .focused(isFocused)
-                    .frame(minHeight: 110, maxHeight: 160)
-                    .padding(10)
+                    .frame(height: 120)
+                    .padding(8)
                     .scrollContentBackground(.hidden)
                     .background(Color(.systemGray6))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -139,11 +140,12 @@ private struct TextInputSection: View {
                     Text("例：I was blown away by the sunset today.")
                         .foregroundStyle(.tertiary)
                         .font(.body)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 18)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 16)
                         .allowsHitTesting(false)
                 }
             }
+            .frame(height: 120)
         }
     }
 }
