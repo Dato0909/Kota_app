@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,9 @@ import {
   Image,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
+import { Audio } from 'expo-av';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import TopicCard from '../components/TopicCard';
@@ -68,6 +70,49 @@ function PostPromptCard({ onPress }: { onPress: () => void }) {
   );
 }
 
+// ─── Mini audio player ────────────────────────────────────────────────────────
+
+function MiniPlayer({ uri }: { uri: string }) {
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  async function toggle() {
+    if (playing) {
+      await soundRef.current?.stopAsync();
+      await soundRef.current?.unloadAsync();
+      soundRef.current = null;
+      setPlaying(false);
+      return;
+    }
+    try {
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+      const { sound } = await Audio.Sound.createAsync({ uri });
+      soundRef.current = sound;
+      setPlaying(true);
+      sound.setOnPlaybackStatusUpdate((s) => {
+        if (s.isLoaded && s.didJustFinish) {
+          sound.unloadAsync();
+          soundRef.current = null;
+          setPlaying(false);
+        }
+      });
+      await sound.playAsync();
+    } catch {
+      Alert.alert('エラー', '再生できませんでした。');
+      setPlaying(false);
+    }
+  }
+
+  return (
+    <TouchableOpacity style={styles.miniPlayer} onPress={toggle} activeOpacity={0.8}>
+      <Text style={styles.miniPlayerIcon}>{playing ? '⬛' : '▶'}</Text>
+      <Text style={styles.miniPlayerText}>{playing ? '再生中...' : '音読を再生'}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Completed card ───────────────────────────────────────────────────────────
+
 function CompletedCard({ post }: { post: Post }) {
   return (
     <View style={styles.completedCard}>
@@ -81,6 +126,7 @@ function CompletedCard({ post }: { post: Post }) {
       <View style={styles.postTextBox}>
         <Text style={styles.postText}>{post.text}</Text>
       </View>
+      {post.recordingUri && <MiniPlayer uri={post.recordingUri} />}
       <Text style={styles.tomorrowNote}>明日のお題をお楽しみに</Text>
     </View>
   );
@@ -94,6 +140,7 @@ function PostHistory({ posts }: { posts: Post[] }) {
         <View key={post.id} style={styles.historyRow}>
           <Text style={styles.historyTopic}>{post.topicPrompt}</Text>
           <Text style={styles.historyText}>{post.text}</Text>
+          {post.recordingUri && <MiniPlayer uri={post.recordingUri} />}
         </View>
       ))}
     </View>
@@ -189,6 +236,22 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textAlign: 'center',
   },
+  // Mini player
+  miniPlayer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(0,122,255,0.25)',
+  },
+  miniPlayerIcon: { fontSize: 13 },
+  miniPlayerText: { fontSize: 13, fontWeight: '600', color: '#007AFF' },
+
   // History
   historySection: {
     gap: 10,

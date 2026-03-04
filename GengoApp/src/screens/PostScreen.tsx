@@ -15,6 +15,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import TopicCard from '../components/TopicCard';
+import VoiceRecorder from '../components/VoiceRecorder';
 import { savePost } from '../utils/storage';
 import { getTodaysTopic } from '../data/topics';
 import type { Post } from '../types';
@@ -25,6 +26,7 @@ export default function PostScreen() {
 
   const [text, setText] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [recordingUri, setRecordingUri] = useState<string | null>(null);
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
 
   const canSubmit = text.trim().length > 0;
@@ -52,6 +54,7 @@ export default function PostScreen() {
       topicPrompt: topic.prompt,
       text: text.trim(),
       photoUri: photoUri ?? undefined,
+      recordingUri: recordingUri ?? undefined,
       createdAt: new Date().toISOString(),
     };
     await savePost(post);
@@ -125,6 +128,12 @@ export default function PostScreen() {
               autoFocus
               textAlignVertical="top"
             />
+          </View>
+
+          {/* Voice recorder */}
+          <View style={styles.recorderSection}>
+            <Text style={styles.recorderLabel}>音読を録音する（任意）</Text>
+            <VoiceRecorder onRecordingChange={setRecordingUri} />
           </View>
 
           {/* Photo section */}
@@ -254,6 +263,10 @@ const styles = StyleSheet.create({
     minHeight: 120,
     lineHeight: 22,
   },
+  // Recorder
+  recorderSection: { gap: 8 },
+  recorderLabel: { fontSize: 15, fontWeight: '600', color: '#1C1C1E' },
+
   // Photo
   photoSection: {
     gap: 8,
