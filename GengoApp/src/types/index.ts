@@ -13,3 +13,11 @@ export interface Post {
   photoUri?: string;
   createdAt: string; // ISO date string
 }
+
+export interface Vocabulary {
+  id: string;
+  word: string;      // English word / phrase
+  meaning: string;   // Japanese meaning
+  example?: string;  // Optional example sentence
+  createdAt: string; // ISO date string
+}

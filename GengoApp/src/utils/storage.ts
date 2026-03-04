@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Post } from '../types';
+import { Post, Vocabulary } from '../types';
 
 const POSTS_KEY = 'gengo_posts';
 
@@ -31,6 +31,31 @@ export function isToday(dateString: string): boolean {
 /** 日付を "YYYY-MM-DD" 形式に正規化 */
 function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+// ─── Vocabulary storage ───────────────────────────────────────────────────────
+
+const VOCAB_KEY = 'gengo_vocab';
+
+export async function loadVocab(): Promise<Vocabulary[]> {
+  try {
+    const json = await AsyncStorage.getItem(VOCAB_KEY);
+    return json ? JSON.parse(json) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addVocab(vocab: Vocabulary): Promise<void> {
+  const list = await loadVocab();
+  list.unshift(vocab);
+  await AsyncStorage.setItem(VOCAB_KEY, JSON.stringify(list));
+}
+
+export async function deleteVocab(id: string): Promise<void> {
+  const list = await loadVocab();
+  const filtered = list.filter((v) => v.id !== id);
+  await AsyncStorage.setItem(VOCAB_KEY, JSON.stringify(filtered));
 }
 
 /**
