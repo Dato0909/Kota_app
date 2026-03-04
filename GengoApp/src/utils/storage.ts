@@ -27,3 +27,33 @@ export function isToday(dateString: string): boolean {
     date.getDate() === today.getDate()
   );
 }
+
+/** 日付を "YYYY-MM-DD" 形式に正規化 */
+function toDateKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * 投稿リストから現在の連続投稿日数（ストリーク）を計算する。
+ * 今日または昨日まで連続していればカウントを継続する。
+ */
+export function calcStreak(posts: Post[]): number {
+  if (posts.length === 0) return 0;
+
+  const postedDays = new Set(posts.map((p) => toDateKey(new Date(p.createdAt))));
+
+  let streak = 0;
+  const cursor = new Date();
+
+  // 今日投稿がない場合は昨日から遡る
+  if (!postedDays.has(toDateKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  while (postedDays.has(toDateKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
+}
