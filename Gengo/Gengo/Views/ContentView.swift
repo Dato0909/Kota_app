@@ -9,6 +9,7 @@ struct ContentView: View {
                 }
             // 単語帳・フィード・プロフィールは今後追加
         }
+        .background(Color(.systemBackground))
     }
 }
 

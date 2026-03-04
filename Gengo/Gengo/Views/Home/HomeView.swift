@@ -35,8 +35,10 @@ struct HomeView: View {
                 }
                 .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Gengo")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
             .sheet(isPresented: $showingPostView) {
                 PostView(viewModel: viewModel) {
                     viewModel.submit(context: modelContext)
