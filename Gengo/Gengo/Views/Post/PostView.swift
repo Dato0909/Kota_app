@@ -33,8 +33,10 @@ struct PostView: View {
                 }
                 .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("今日の1文")
+            .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
