@@ -42,6 +42,8 @@ struct HomeView: View {
                     viewModel.submit(context: modelContext)
                     showingPostView = false
                 }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
             }
         }
     }
