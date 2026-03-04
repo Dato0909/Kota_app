@@ -11,72 +11,43 @@ import { useFocusEffect } from '@react-navigation/native';
 import { loadPosts, calcStreak } from '../utils/storage';
 import type { Post } from '../types';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Rank definitions ─────────────────────────────────────────────────────────
 
-interface Badge {
-  id: string;
+interface Rank {
+  level: number;
   icon: string;
-  label: string;
-  desc: string;
-  earned: boolean;
+  name: string;        // English
+  nameJa: string;      // 日本語
+  requiredPosts: number;
+  color: string;       // accent color
+  bgColor: string;     // light background
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+const RANKS: Rank[] = [
+  { level: 1, icon: '🌱', name: 'Seed',      nameJa: '種',    requiredPosts: 0,   color: '#34C759', bgColor: '#F0FFF4' },
+  { level: 2, icon: '🌿', name: 'Sprout',    nameJa: '芽吹き', requiredPosts: 5,   color: '#30B0C7', bgColor: '#F0FAFF' },
+  { level: 3, icon: '🌳', name: 'Sapling',   nameJa: '若木',  requiredPosts: 15,  color: '#007AFF', bgColor: '#F0F4FF' },
+  { level: 4, icon: '⭐', name: 'Explorer',  nameJa: '探求者', requiredPosts: 30,  color: '#FF9F0A', bgColor: '#FFFBF0' },
+  { level: 5, icon: '🔥', name: 'Dedicated', nameJa: '継続者', requiredPosts: 60,  color: '#FF6B35', bgColor: '#FFF4F0' },
+  { level: 6, icon: '💎', name: 'Scholar',   nameJa: '学者',  requiredPosts: 100, color: '#7C4DFF', bgColor: '#F6F0FF' },
+  { level: 7, icon: '👑', name: 'Master',    nameJa: '達人',  requiredPosts: 200, color: '#FFD700', bgColor: '#FFFDF0' },
+];
 
-const MOCK_USER = {
-  name: 'Gengo User',
-  level: 1,
-  levelName: 'Beginner',
-};
+function getCurrentRank(totalPosts: number): Rank {
+  let current = RANKS[0];
+  for (const rank of RANKS) {
+    if (totalPosts >= rank.requiredPosts) current = rank;
+  }
+  return current;
+}
 
-function buildBadges(totalPosts: number, streak: number): Badge[] {
-  return [
-    {
-      id: 'first_post',
-      icon: '🌱',
-      label: '初投稿',
-      desc: '最初の一文を投稿した',
-      earned: totalPosts >= 1,
-    },
-    {
-      id: 'streak_3',
-      icon: '🔥',
-      label: '3日連続',
-      desc: '3日連続で投稿した',
-      earned: streak >= 3,
-    },
-    {
-      id: 'posts_7',
-      icon: '✏️',
-      label: '7投稿',
-      desc: '7本の英文を投稿した',
-      earned: totalPosts >= 7,
-    },
-    {
-      id: 'streak_7',
-      icon: '💪',
-      label: '1週間連続',
-      desc: '7日連続で投稿した',
-      earned: streak >= 7,
-    },
-    {
-      id: 'posts_30',
-      icon: '🌟',
-      label: '30投稿',
-      desc: '30本の英文を投稿した',
-      earned: totalPosts >= 30,
-    },
-    {
-      id: 'streak_30',
-      icon: '👑',
-      label: '30日連続',
-      desc: '30日連続で投稿した',
-      earned: streak >= 30,
-    },
-  ];
+function getNextRank(currentRank: Rank): Rank | null {
+  return RANKS.find((r) => r.level === currentRank.level + 1) ?? null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const MOCK_USER_NAME = 'Gengo User';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -95,15 +66,72 @@ function StatCard({ value, label, icon }: { value: number; label: string; icon: 
   );
 }
 
-function BadgePill({ badge }: { badge: Badge }) {
+function RankRow({
+  rank,
+  totalPosts,
+  isCurrent,
+}: {
+  rank: Rank;
+  totalPosts: number;
+  isCurrent: boolean;
+}) {
+  const achieved = totalPosts >= rank.requiredPosts;
+  const isLocked = !achieved && !isCurrent;
+  const nextRank = getNextRank(rank);
+  const progressMax = nextRank ? nextRank.requiredPosts - rank.requiredPosts : 1;
+  const progressVal = isCurrent ? Math.min(totalPosts - rank.requiredPosts, progressMax) : 0;
+  const progressRatio = isCurrent ? progressVal / progressMax : achieved ? 1 : 0;
+
   return (
-    <View style={[styles.badgePill, !badge.earned && styles.badgePillLocked]}>
-      <Text style={[styles.badgeIcon, !badge.earned && styles.badgeIconLocked]}>
-        {badge.earned ? badge.icon : '🔒'}
-      </Text>
-      <Text style={[styles.badgeLabel, !badge.earned && styles.badgeLabelLocked]}>
-        {badge.label}
-      </Text>
+    <View style={[styles.rankRow, isCurrent && { borderColor: rank.color, borderWidth: 1.5, backgroundColor: rank.bgColor }]}>
+      {/* Connector line above (not for first) */}
+      {rank.level > 1 && (
+        <View style={[styles.connectorLine, { backgroundColor: achieved || isCurrent ? rank.color : '#E5E5EA' }]} />
+      )}
+
+      <View style={styles.rankRowInner}>
+        {/* Icon */}
+        <View style={[styles.rankIconWrap, { backgroundColor: achieved ? rank.color : isCurrent ? rank.bgColor : '#F2F2F7', borderColor: achieved || isCurrent ? rank.color : '#E5E5EA' }]}>
+          <Text style={[styles.rankIconText, isLocked && styles.rankIconLocked]}>
+            {isLocked ? '🔒' : rank.icon}
+          </Text>
+        </View>
+
+        {/* Info */}
+        <View style={styles.rankInfo}>
+          <View style={styles.rankNameRow}>
+            <Text style={[styles.rankName, isLocked && styles.rankNameLocked]}>
+              {rank.nameJa}
+            </Text>
+            <Text style={[styles.rankNameEn, isLocked && styles.rankNameLocked]}>
+              {rank.name}
+            </Text>
+            {isCurrent && (
+              <View style={[styles.currentChip, { backgroundColor: rank.color }]}>
+                <Text style={styles.currentChipText}>現在</Text>
+              </View>
+            )}
+          </View>
+          <Text style={[styles.rankReq, isLocked && styles.rankNameLocked]}>
+            {rank.requiredPosts} 投稿〜
+          </Text>
+          {isCurrent && nextRank && (
+            <View style={styles.miniProgressWrap}>
+              <View style={styles.miniProgressTrack}>
+                <View style={[styles.miniProgressFill, { width: `${progressRatio * 100}%`, backgroundColor: rank.color }]} />
+              </View>
+              <Text style={[styles.miniProgressText, { color: rank.color }]}>
+                {progressVal} / {progressMax}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Check */}
+        {achieved && !isCurrent && (
+          <Text style={[styles.rankCheck, { color: rank.color }]}>✓</Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -119,12 +147,8 @@ function PostRow({ post }: { post: Post }) {
         </View>
       )}
       <View style={styles.postRowBody}>
-        <Text style={styles.postRowText} numberOfLines={2}>
-          {post.text}
-        </Text>
-        <Text style={styles.postRowTopic} numberOfLines={1}>
-          {post.topicPrompt}
-        </Text>
+        <Text style={styles.postRowText} numberOfLines={2}>{post.text}</Text>
+        <Text style={styles.postRowTopic} numberOfLines={1}>{post.topicPrompt}</Text>
       </View>
       <Text style={styles.postRowDate}>{formatDate(post.createdAt)}</Text>
     </View>
@@ -144,60 +168,52 @@ export default function ProfileScreen() {
 
   const streak = calcStreak(posts);
   const totalPosts = posts.length;
-  const badges = buildBadges(totalPosts, streak);
-  const earnedCount = badges.filter((b) => b.earned).length;
-
-  const levelThresholds = [0, 10, 30, 60];
-  const nextThreshold = levelThresholds[MOCK_USER.level] ?? null;
-  const progressRatio = nextThreshold ? Math.min(totalPosts / nextThreshold, 1) : 1;
+  const currentRank = getCurrentRank(totalPosts);
+  const nextRank = getNextRank(currentRank);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
 
         {/* ── ヘッダー ── */}
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {MOCK_USER.name.charAt(0).toUpperCase()}
-            </Text>
+        <View style={[styles.header, { backgroundColor: currentRank.bgColor, borderColor: currentRank.color }]}>
+          <View style={[styles.avatar, { backgroundColor: currentRank.color }]}>
+            <Text style={styles.avatarText}>{MOCK_USER_NAME.charAt(0).toUpperCase()}</Text>
           </View>
-          <Text style={styles.userName}>{MOCK_USER.name}</Text>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelBadgeText}>
-              Lv.{MOCK_USER.level} {MOCK_USER.levelName}
-            </Text>
-          </View>
-        </View>
-
-        {/* ── レベル進捗バー ── */}
-        {nextThreshold !== null && (
-          <View style={styles.section}>
-            <View style={styles.progressRow}>
-              <Text style={styles.progressLabel}>次のレベルまで</Text>
-              <Text style={styles.progressCount}>
-                {totalPosts} / {nextThreshold} 投稿
+          <Text style={styles.userName}>{MOCK_USER_NAME}</Text>
+          <View style={styles.currentRankDisplay}>
+            <Text style={styles.currentRankIcon}>{currentRank.icon}</Text>
+            <View>
+              <Text style={[styles.currentRankName, { color: currentRank.color }]}>
+                {currentRank.nameJa}
               </Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${progressRatio * 100}%` }]} />
+              <Text style={styles.currentRankNameEn}>{currentRank.name}</Text>
             </View>
           </View>
-        )}
+          {nextRank && (
+            <Text style={styles.nextRankHint}>
+              次のランク「{nextRank.nameJa}」まで あと {nextRank.requiredPosts - totalPosts} 投稿
+            </Text>
+          )}
+        </View>
 
         {/* ── Stats ── */}
         <View style={styles.statsRow}>
           <StatCard value={streak} label="連続投稿" icon="🔥" />
           <StatCard value={totalPosts} label="総投稿数" icon="✏️" />
-          <StatCard value={earnedCount} label="バッジ" icon="🏅" />
         </View>
 
-        {/* ── バッジ ── */}
+        {/* ── ランクロードマップ ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>バッジ</Text>
-          <View style={styles.badgeGrid}>
-            {badges.map((badge) => (
-              <BadgePill key={badge.id} badge={badge} />
+          <Text style={styles.sectionTitle}>ランク</Text>
+          <View style={styles.rankList}>
+            {[...RANKS].reverse().map((rank) => (
+              <RankRow
+                key={rank.level}
+                rank={rank}
+                totalPosts={totalPosts}
+                isCurrent={rank.level === currentRank.level}
+              />
             ))}
           </View>
         </View>
@@ -225,84 +241,34 @@ export default function ProfileScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  content: {
-    padding: 16,
-    gap: 16,
-    paddingBottom: 40,
-  },
+  safe: { flex: 1, backgroundColor: '#F2F2F7' },
+  content: { padding: 16, gap: 16, paddingBottom: 40 },
 
   // Header
   header: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 20,
     alignItems: 'center',
-    paddingVertical: 16,
-    gap: 8,
+    gap: 10,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#007AFF',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1C1C1E',
-  },
-  levelBadge: {
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-  },
-  levelBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
-  },
-
-  // Progress
-  progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  progressLabel: {
-    fontSize: 13,
-    color: '#8E8E93',
-  },
-  progressCount: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1C1C1E',
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#E5E5EA',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#007AFF',
-  },
+  avatarText: { fontSize: 32, fontWeight: '700', color: '#fff' },
+  userName: { fontSize: 18, fontWeight: '700', color: '#1C1C1E' },
+  currentRankDisplay: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  currentRankIcon: { fontSize: 36 },
+  currentRankName: { fontSize: 22, fontWeight: '800' },
+  currentRankNameEn: { fontSize: 13, color: '#8E8E93', fontWeight: '500' },
+  nextRankHint: { fontSize: 12, color: '#8E8E93', textAlign: 'center' },
 
   // Stats
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+  statsRow: { flexDirection: 'row', gap: 10 },
   statCard: {
     flex: 1,
     backgroundColor: '#fff',
@@ -311,68 +277,66 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  statIcon: {
-    fontSize: 22,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1C1C1E',
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#8E8E93',
-    textAlign: 'center',
-  },
+  statIcon: { fontSize: 22 },
+  statValue: { fontSize: 28, fontWeight: '700', color: '#1C1C1E' },
+  statLabel: { fontSize: 11, color: '#8E8E93' },
 
   // Section
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 16,
-    gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1C1C1E',
-  },
+  section: { backgroundColor: '#fff', borderRadius: 14, padding: 16, gap: 12 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
 
-  // Badges
-  badgeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  badgePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#F2F9FF',
+  // Rank list
+  rankList: { gap: 0 },
+  rankRow: {
+    borderRadius: 12,
+    marginBottom: 8,
+    padding: 12,
+    backgroundColor: '#F9F9F9',
     borderWidth: 1,
-    borderColor: 'rgba(0,122,255,0.25)',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  badgePillLocked: {
-    backgroundColor: '#F2F2F7',
     borderColor: '#E5E5EA',
+    position: 'relative',
   },
-  badgeIcon: {
-    fontSize: 15,
+  connectorLine: {
+    position: 'absolute',
+    top: -8,
+    left: 30,
+    width: 2,
+    height: 8,
   },
-  badgeIconLocked: {
-    opacity: 0.4,
+  rankRowInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rankIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  badgeLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#007AFF',
+  rankIconText: { fontSize: 22 },
+  rankIconLocked: { opacity: 0.4 },
+  rankInfo: { flex: 1, gap: 3 },
+  rankNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rankName: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
+  rankNameEn: { fontSize: 12, color: '#8E8E93' },
+  rankNameLocked: { color: '#C7C7CC' },
+  rankReq: { fontSize: 12, color: '#8E8E93' },
+  currentChip: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
-  badgeLabelLocked: {
-    color: '#C7C7CC',
+  currentChipText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  rankCheck: { fontSize: 18, fontWeight: '700' },
+  miniProgressWrap: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  miniProgressTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E5EA',
+    overflow: 'hidden',
   },
+  miniProgressFill: { height: 4, borderRadius: 2 },
+  miniProgressText: { fontSize: 11, fontWeight: '600', flexShrink: 0 },
 
   // Post history
   postRow: {
@@ -383,12 +347,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E5EA',
   },
-  postThumb: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: '#E5E5EA',
-  },
+  postThumb: { width: 48, height: 48, borderRadius: 8, backgroundColor: '#E5E5EA' },
   postThumbPlaceholder: {
     width: 48,
     height: 48,
@@ -399,40 +358,14 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E5EA',
   },
-  postThumbIcon: {
-    fontSize: 20,
-  },
-  postRowBody: {
-    flex: 1,
-    gap: 2,
-  },
-  postRowText: {
-    fontSize: 14,
-    color: '#1C1C1E',
-    lineHeight: 19,
-  },
-  postRowTopic: {
-    fontSize: 12,
-    color: '#8E8E93',
-  },
-  postRowDate: {
-    fontSize: 12,
-    color: '#C7C7CC',
-    flexShrink: 0,
-  },
+  postThumbIcon: { fontSize: 20 },
+  postRowBody: { flex: 1, gap: 2 },
+  postRowText: { fontSize: 14, color: '#1C1C1E', lineHeight: 19 },
+  postRowTopic: { fontSize: 12, color: '#8E8E93' },
+  postRowDate: { fontSize: 12, color: '#C7C7CC', flexShrink: 0 },
 
   // Empty
-  emptyBox: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    gap: 4,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: '#8E8E93',
-  },
-  emptySubText: {
-    fontSize: 13,
-    color: '#C7C7CC',
-  },
+  emptyBox: { alignItems: 'center', paddingVertical: 24, gap: 4 },
+  emptyText: { fontSize: 15, color: '#8E8E93' },
+  emptySubText: { fontSize: 13, color: '#C7C7CC' },
 });
