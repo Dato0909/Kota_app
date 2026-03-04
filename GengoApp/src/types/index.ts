@@ -16,6 +16,7 @@ export interface Post {
   topicPrompt: string;
   text: string;
   photoUri?: string;
+  recordingUri?: string; // Local file URI of voice recording
   createdAt: string; // ISO date string
 }
 
