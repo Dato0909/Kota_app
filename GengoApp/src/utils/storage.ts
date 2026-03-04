@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Post, Vocabulary } from '../types';
+import { Post, UserProfile, Vocabulary } from '../types';
 
 const POSTS_KEY = 'gengo_posts';
 
@@ -31,6 +31,27 @@ export function isToday(dateString: string): boolean {
 /** 日付を "YYYY-MM-DD" 形式に正規化 */
 function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+// ─── User profile storage ─────────────────────────────────────────────────────
+
+const USER_KEY = 'gengo_user';
+
+export async function loadUser(): Promise<UserProfile | null> {
+  try {
+    const json = await AsyncStorage.getItem(USER_KEY);
+    return json ? JSON.parse(json) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveUser(profile: UserProfile): Promise<void> {
+  await AsyncStorage.setItem(USER_KEY, JSON.stringify(profile));
+}
+
+export async function clearUser(): Promise<void> {
+  await AsyncStorage.removeItem(USER_KEY);
 }
 
 // ─── Vocabulary storage ───────────────────────────────────────────────────────

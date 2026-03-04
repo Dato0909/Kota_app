@@ -5,6 +5,11 @@ export interface Topic {
   templates: string[];
 }
 
+export interface UserProfile {
+  name: string;
+  createdAt: string; // ISO date string
+}
+
 export interface Post {
   id: string;
   topicId: string;

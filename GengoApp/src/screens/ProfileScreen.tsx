@@ -6,9 +6,12 @@ import {
   Image,
   StyleSheet,
   SafeAreaView,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { loadPosts, calcStreak } from '../utils/storage';
+import { useAuth } from '../context/AuthContext';
 import type { Post } from '../types';
 
 // ─── Rank definitions ─────────────────────────────────────────────────────────
@@ -46,8 +49,6 @@ function getNextRank(currentRank: Rank): Rank | null {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const MOCK_USER_NAME = 'Gengo User';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -158,6 +159,7 @@ function PostRow({ post }: { post: Post }) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
+  const { user, logout } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
 
   useFocusEffect(
@@ -170,6 +172,18 @@ export default function ProfileScreen() {
   const totalPosts = posts.length;
   const currentRank = getCurrentRank(totalPosts);
   const nextRank = getNextRank(currentRank);
+  const displayName = user?.name ?? 'User';
+
+  function handleLogout() {
+    Alert.alert(
+      'ログアウト',
+      '名前の設定がリセットされます。投稿・単語帳のデータはこの端末に残ります。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: 'ログアウト', style: 'destructive', onPress: logout },
+      ]
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -178,9 +192,9 @@ export default function ProfileScreen() {
         {/* ── ヘッダー ── */}
         <View style={[styles.header, { backgroundColor: currentRank.bgColor, borderColor: currentRank.color }]}>
           <View style={[styles.avatar, { backgroundColor: currentRank.color }]}>
-            <Text style={styles.avatarText}>{MOCK_USER_NAME.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
           </View>
-          <Text style={styles.userName}>{MOCK_USER_NAME}</Text>
+          <Text style={styles.userName}>{displayName}</Text>
           <View style={styles.currentRankDisplay}>
             <Text style={styles.currentRankIcon}>{currentRank.icon}</Text>
             <View>
@@ -232,6 +246,14 @@ export default function ProfileScreen() {
             ))
           )}
         </View>
+
+        {/* ── ログアウト ── */}
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>ログアウト</Text>
+        </TouchableOpacity>
+        <Text style={styles.logoutNote}>
+          ※ ログアウトしても投稿・単語帳データは端末に残ります
+        </Text>
 
       </ScrollView>
     </SafeAreaView>
@@ -368,4 +390,15 @@ const styles = StyleSheet.create({
   emptyBox: { alignItems: 'center', paddingVertical: 24, gap: 4 },
   emptyText: { fontSize: 15, color: '#8E8E93' },
   emptySubText: { fontSize: 13, color: '#C7C7CC' },
+
+  // Logout
+  logoutButton: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  logoutButtonText: { fontSize: 15, fontWeight: '600', color: '#FF3B30' },
+  logoutNote: { fontSize: 12, color: '#C7C7CC', textAlign: 'center', marginTop: 4 },
 });
