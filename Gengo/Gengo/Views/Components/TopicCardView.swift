@@ -4,7 +4,7 @@ struct TopicCardView: View {
     let topic: Topic
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
 
             // Header
             HStack {
@@ -24,25 +24,27 @@ struct TopicCardView: View {
 
             // Prompt
             Text(topic.jaPrompt)
-                .font(.title2)
+                .font(.headline)
                 .fontWeight(.bold)
                 .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
 
             Divider()
                 .overlay(.white.opacity(0.3))
 
             // Hint
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text("使えるフレーズ")
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(.white.opacity(0.7))
                 Text(topic.enHint)
-                    .font(.footnote)
+                    .font(.caption)
                     .foregroundStyle(.white.opacity(0.95))
-                    .lineSpacing(3)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding()
+        .padding(12)
         .background(
             LinearGradient(
                 colors: [Color.accentColor, Color.accentColor.opacity(0.75)],
