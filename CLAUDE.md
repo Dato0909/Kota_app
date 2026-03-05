@@ -76,6 +76,34 @@ npx expo run:ios
 
 ---
 
+### `Please upgrade XCode` / Xcode バージョン不足
+
+**原因:**
+React Native SDK 55 は **Xcode 16.1 以上**が必須。それ以前のバージョンでは `pod install` がエラーで終了する。
+
+**対応策:**
+
+1. Mac App Store から Xcode を最新版（16.1+）にアップデートする（約8〜10GB）
+2. 更新後にコマンドラインツールを設定する：
+
+```bash
+sudo xcode-select --switch /Applications/Xcode.app
+sudo xcodebuild -runFirstLaunch
+```
+
+3. 改めてビルドを実行する：
+
+```bash
+cd ~/Documents/Kota_app/GengoApp
+pod install --repo-update   # ios/ ディレクトリ内で実行してもよい
+npx expo run:ios
+```
+
+**ルール:**
+- React Native のバージョンを上げる際は、必要な Xcode の最低バージョンを確認すること。
+
+---
+
 ### 作業ディレクトリに注意
 
 すべての npm / expo コマンドは `GengoApp/` ディレクトリ内で実行すること。
