@@ -45,6 +45,55 @@ npx expo run:android
 
 ---
 
+### `pod install` 失敗 / "sandbox is not in sync with Podfile.lock"
+
+**原因:**
+新しいネイティブパッケージ（例: `expo-av`）を追加した後、iOS の CocoaPods が未同期の状態になっている。
+`npx expo run:ios` が自動で `pod install` を実行しようとするが、CocoaPods のバージョンが古いか未インストールの場合に失敗する。
+
+**対応策:**
+
+```bash
+# 1. CocoaPods を Homebrew でインストール / 更新
+brew install cocoapods
+# すでに入っている場合
+# brew upgrade cocoapods
+
+# 2. iOS ディレクトリで pod install を手動実行
+cd GengoApp/ios
+pod install --repo-update
+
+# 3. GengoApp に戻ってビルド
+cd ..
+npx expo run:ios
+```
+
+> `pod install --repo-update` は数分〜10分かかることがある。
+
+**ルール:**
+- ネイティブパッケージを追加したら、`npx expo run:ios` の前に `pod install --repo-update` が必要になる場合がある。
+- CocoaPods は `gem install` ではなく **Homebrew でインストール**することを推奨（Ruby バージョン競合を避けるため）。
+
+---
+
+### 作業ディレクトリに注意
+
+すべての npm / expo コマンドは `GengoApp/` ディレクトリ内で実行すること。
+`Kota_app/`（リポジトリルート）では `package.json` が存在しないためエラーになる。
+
+```bash
+# 正しい
+cd ~/Documents/Kota_app/GengoApp
+npm install
+npx expo run:ios
+
+# NG（ルートで実行してしまうと package.json が見つからない）
+cd ~/Documents/Kota_app
+npm install  # → エラー
+```
+
+---
+
 ### パッケージインストール
 
 Expo の互換バージョン解決のため、`npm install` ではなく `npx expo install` を使う。
