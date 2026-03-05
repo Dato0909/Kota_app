@@ -28,18 +28,28 @@ echo ""
 echo "=== Step 2: xcodebuild でビルド ==="
 cd "$IOS"
 
-# 利用可能なシミュレータを取得
-SIMULATOR=$(xcrun simctl list devices available | grep "iPhone" | grep -v "unavailable" | tail -1 | sed 's/.*(\(.*\)) (Booted.*/\1/' | sed 's/.*(\(.*\)).*/\1/')
-echo "使用するシミュレータ ID: $SIMULATOR"
-
 xcodebuild \
   -workspace GengoApp.xcworkspace \
   -scheme GengoApp \
   -configuration Debug \
-  -destination "id=$SIMULATOR" \
-  -allowProvisioningUpdates \
-  build 2>&1 | grep -E "(error:|warning:|Build succeeded|Build FAILED|❌|✅)" | tail -30
+  -sdk iphonesimulator \
+  CODE_SIGNING_ALLOWED=NO \
+  build 2>&1 | grep -E "(error:|warning: |Build succeeded|Build FAILED)" | grep -v "^$" | tail -40
 
 echo ""
-echo "ビルド完了。シミュレータで起動するには:"
-echo "  npx expo start --ios"
+echo "=== ビルド成功の場合：シミュレータで起動 ==="
+# シミュレータの UUID を正しく取得
+SIMULATOR=$(xcrun simctl list devices available -j | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for runtime in sorted(data['devices'].keys(), reverse=True):
+    if 'iOS' in runtime:
+        for d in data['devices'][runtime]:
+            if d['isAvailable'] and 'iPhone' in d['name']:
+                print(d['udid'])
+                exit()
+")
+echo "シミュレータ: $SIMULATOR"
+xcrun simctl boot "$SIMULATOR" 2>/dev/null || true
+cd "$GENGO"
+npx expo start --ios
